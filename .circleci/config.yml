@@ -1,0 +1,61 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: docker:20.10.16-dind-alpine3.15
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: build docker image
+          command: docker image build --tag $CONTAINER_REGISTRY_REPOSITORY:$(cat version.txt) . 
+      - run: docker image save $CONTAINER_REGISTRY_REPOSITORY:$(cat version.txt) --output image.tar
+      - persist_to_workspace:
+          root: .
+          paths:
+            - image.tar
+      - store_artifacts:
+          path: image.tar
+
+  test:
+    docker:
+      - image: tcwlab/dgoss:latest
+    environment:
+      GOSS_FILES_PATH: goss
+      GOSS_FILES_STRATEGY: cp
+    steps:
+      - checkout
+      - setup_remote_docker
+      - attach_workspace: 
+          at: /tmp/workspace
+      - run: 
+          name: Load container image from workspace
+          command: docker image load --input /tmp/workspace/image.tar
+      - run: dgoss run --interactive --tty $CONTAINER_REGISTRY_REPOSITORY:$(cat version.txt)
+  push:
+    docker:
+      - image: docker:20.10.16-dind-alpine3.15
+    steps:
+      - checkout
+      - setup_remote_docker
+      - attach_workspace: 
+          at: /tmp/workspace
+      - run: 
+          name: Load container image from workspace
+          command: docker image load --input /tmp/workspace/image.tar
+      - run: 
+          name: Login to container registry
+          command: echo $CONTAINER_REGISTRY_PASSWORD | docker login --password-stdin --username petrpliska
+      - run: 
+          name: Push image into container registry
+          command: docker image push --quiet $CONTAINER_REGISTRY_REPOSITORY:$(cat version.txt)
+workflows:
+  build_and_test:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
+      - push:
+          requires:
+            - test

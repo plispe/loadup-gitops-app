@@ -1,0 +1,6 @@
+file:
+  /app:
+    filetype: directory
+    exists: true
+  /app/app.js:
+    exists: true
