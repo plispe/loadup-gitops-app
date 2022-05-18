@@ -4,3 +4,8 @@ file:
     exists: true
   /app/app.js:
     exists: true
+command: 
+  echo {{ .Env.VERSION }}:
+    exit-status: 0
+    stdout: 
+    - {{ .Env.VERSION }}
