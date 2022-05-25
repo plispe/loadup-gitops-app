@@ -8,7 +8,7 @@ jobs:
       - setup_remote_docker
       - run:
           name: build docker image
-          command: docker image build --build-arg version=$(cat version.txt) build --tag $CONTAINER_REGISTRY_REPOSITORY:$(cat version.txt) . 
+          command: docker image build --build-arg version=$(cat version.txt) --tag $CONTAINER_REGISTRY_REPOSITORY:$(cat version.txt) . 
       - run: docker image save $CONTAINER_REGISTRY_REPOSITORY:$(cat version.txt) --output image.tar
       - persist_to_workspace:
           root: .
